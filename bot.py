@@ -1,13 +1,14 @@
 import os
 import logging
+from datetime import datetime, timezone
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 
-# =========================
-# تنظیمات
-# =========================
+# ============================================================
+# Configuration
+# ============================================================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -15,51 +16,122 @@ CHANNEL_URL = "https://t.me/MahzaCollection"
 WEBSITE_URL = "https://mahzacollection.ir"
 
 
-# =========================
-# لاگ
-# =========================
+# ============================================================
+# Logging
+# ============================================================
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
+logger = logging.getLogger(__name__)
 
-# =========================
-# دستور /start
-# =========================
+
+# ============================================================
+# /start
+# ============================================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
+    user = update.effective_user
+
+    # --------------------------------------------------------
+    # دریافت منبع ورود
+    # مثال:
+    # /start instagram
+    # /start website
+    # /start campaign1
+    # --------------------------------------------------------
+
+    source = "direct"
+
+    if context.args:
+        source = context.args[0].strip().lower()
+
+    username = user.username if user.username else "بدون_username"
+    user_id = user.id
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    logger.info(
+        "NEW USER | user_id=%s | username=%s | source=%s | time=%s",
+        user_id,
+        username,
+        source,
+        now,
+    )
+
+    # --------------------------------------------------------
+    # دکمه‌ها
+    # --------------------------------------------------------
+
     keyboard = [
-        [
-            InlineKeyboardButton(
-                "🛍 ورود به سایت مهزا",
-                url=WEBSITE_URL
-            )
-        ],
         [
             InlineKeyboardButton(
                 "📢 عضویت در کانال مهزا",
                 url=CHANNEL_URL
             )
         ],
+        [
+            InlineKeyboardButton(
+                "🛍 مشاهده محصولات در سایت",
+                url=WEBSITE_URL
+            )
+        ],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # --------------------------------------------------------
+    # پیام بر اساس منبع ورود
+    # --------------------------------------------------------
+
+    if source == "instagram":
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "🛍 مجموعه‌ای از محصولات زنانه، مردانه و کودک "
+            "از برندهای منتخب را در مهزا کالکشن دنبال کنید.\n\n"
+            "برای دیدن جدیدترین محصولات و اطلاع از "
+            "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 برای ورود به کانال روی دکمه زیر بزنید:"
+        )
+
+    elif source == "website":
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "از طریق سایت مهزا وارد ربات شده‌اید. 🛍️\n\n"
+            "برای دنبال کردن جدیدترین محصولات و اطلاع از "
+            "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 برای عضویت در کانال روی دکمه زیر بزنید:"
+        )
+
+    else:
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "🛍 جدیدترین محصولات زنانه، مردانه و کودک "
+            "مهزا کالکشن را دنبال کنید.\n\n"
+            "برای اطلاع از محصولات جدید و موجودی‌های تازه، "
+            "به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 یکی از گزینه‌های زیر را انتخاب کنید:"
+        )
+
+    # --------------------------------------------------------
+    # ارسال پیام
+    # --------------------------------------------------------
+
     await update.message.reply_text(
-        "سلام 🌷 به ربات Mahza Collection خوش آمدید.\n\n"
-        "اینجا می‌توانید جدیدترین محصولات، تخفیف‌ها و "
-        "پیشنهادهای مهزا کالکشن را دنبال کنید. 🛍✨\n\n"
-        "برای ورود به سایت یا عضویت در کانال، یکی از گزینه‌های زیر را انتخاب کنید:",
+        message,
         reply_markup=reply_markup,
     )
 
 
-# =========================
-# اجرای ربات
-# =========================
+# ============================================================
+# Main
+# ============================================================
 
 def main():
 
@@ -76,6 +148,10 @@ def main():
 
     application.run_polling()
 
+
+# ============================================================
+# Run
+# ============================================================
 
 if __name__ == "__main__":
     main()
