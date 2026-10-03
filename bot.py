@@ -212,6 +212,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ============================================================
+# /stats
+# ============================================================
+
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    user = update.effective_user
+
+    stats_data = load_stats()
+
+    message = (
+        "📊 آمار ربات Mahza Collection\n\n"
+        f"📸 Instagram: {stats_data.get('instagram', 0)}\n"
+        f"🌐 Website: {stats_data.get('website', 0)}\n"
+        f"🔗 Direct: {stats_data.get('direct', 0)}\n"
+        f"✅ Members confirmed: "
+        f"{stats_data.get('members_confirmed', 0)}\n\n"
+        f"👤 درخواست توسط: {user.first_name}"
+    )
+
+    await update.message.reply_text(message)
+
+
+# ============================================================
 # Check Membership
 # ============================================================
 
@@ -303,6 +326,13 @@ def main():
         CommandHandler(
             "start",
             start,
+        )
+    )
+
+    application.add_handler(
+        CommandHandler(
+            "stats",
+            stats,
         )
     )
 
