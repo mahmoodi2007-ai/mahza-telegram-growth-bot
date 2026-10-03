@@ -1,6 +1,8 @@
 import os
+import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -21,6 +23,8 @@ CHANNEL_USERNAME = "@MahzaCollection"
 CHANNEL_URL = "https://t.me/MahzaCollection"
 WEBSITE_URL = "https://mahzacollection.ir"
 
+STATS_FILE = Path("stats.json")
+
 
 # ============================================================
 # Logging
@@ -35,6 +39,82 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
+# Stats
+# ============================================================
+
+def load_stats():
+
+    if not STATS_FILE.exists():
+
+        return {
+            "instagram": 0,
+            "website": 0,
+            "direct": 0,
+            "members_confirmed": 0,
+        }
+
+    try:
+
+        with open(STATS_FILE, "r", encoding="utf-8") as file:
+            stats = json.load(file)
+
+        return stats
+
+    except Exception as error:
+
+        logger.error(
+            "STATS LOAD ERROR | error=%s",
+            error,
+        )
+
+        return {
+            "instagram": 0,
+            "website": 0,
+            "direct": 0,
+            "members_confirmed": 0,
+        }
+
+
+def save_stats(stats):
+
+    try:
+
+        with open(STATS_FILE, "w", encoding="utf-8") as file:
+
+            json.dump(
+                stats,
+                file,
+                ensure_ascii=False,
+                indent=2,
+            )
+
+    except Exception as error:
+
+        logger.error(
+            "STATS SAVE ERROR | error=%s",
+            error,
+        )
+
+
+def increase_stat(stat_name):
+
+    stats = load_stats()
+
+    if stat_name not in stats:
+        stats[stat_name] = 0
+
+    stats[stat_name] += 1
+
+    save_stats(stats)
+
+    logger.info(
+        "STAT UPDATED | %s=%s",
+        stat_name,
+        stats[stat_name],
+    )
+
+
+# ============================================================
 # /start
 # ============================================================
 
@@ -45,7 +125,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     source = "direct"
 
     if context.args:
+
         source = context.args[0].strip().lower()
+
+    if source not in ["instagram", "website"]:
+
+        source = "direct"
+
+    increase_stat(source)
 
     username = user.username if user.username else "بدون_username"
     user_id = user.id
@@ -150,6 +237,8 @@ async def check_membership(
 
         if status in ["member", "administrator", "creator"]:
 
+            increase_stat("members_confirmed")
+
             await query.message.reply_text(
                 "🎉 عضویت شما در کانال Mahza Collection تأیید شد.\n\n"
                 "خوش آمدید 🌷\n"
@@ -198,12 +287,23 @@ async def check_membership(
 def main():
 
     if not BOT_TOKEN:
-        raise ValueError("BOT_TOKEN تنظیم نشده است.")
 
-    application = Application.builder().token(BOT_TOKEN).build()
+        raise ValueError(
+            "BOT_TOKEN تنظیم نشده است."
+        )
+
+    application = (
+        Application
+        .builder()
+        .token(BOT_TOKEN)
+        .build()
+    )
 
     application.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start,
+        )
     )
 
     application.add_handler(
@@ -213,7 +313,9 @@ def main():
         )
     )
 
-    print("Mahza Collection Growth Bot is running...")
+    print(
+        "Mahza Collection Growth Bot is running..."
+    )
 
     application.run_polling()
 
