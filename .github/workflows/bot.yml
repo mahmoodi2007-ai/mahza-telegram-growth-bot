@@ -10,6 +10,9 @@ concurrency:
   group: mahza-telegram-growth-bot
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
