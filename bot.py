@@ -3,7 +3,12 @@ import logging
 from datetime import datetime, timezone
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
 
 
 # ============================================================
@@ -12,6 +17,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+CHANNEL_USERNAME = "@MahzaCollection"
 CHANNEL_URL = "https://t.me/MahzaCollection"
 WEBSITE_URL = "https://mahzacollection.ir"
 
@@ -36,14 +42,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = update.effective_user
 
-    # --------------------------------------------------------
-    # دریافت منبع ورود
-    # مثال:
-    # /start instagram
-    # /start website
-    # /start campaign1
-    # --------------------------------------------------------
-
     source = "direct"
 
     if context.args:
@@ -62,30 +60,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         now,
     )
 
-    # --------------------------------------------------------
-    # دکمه‌ها
-    # --------------------------------------------------------
-
     keyboard = [
         [
             InlineKeyboardButton(
                 "📢 عضویت در کانال مهزا",
-                url=CHANNEL_URL
+                url=CHANNEL_URL,
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "✅ عضو کانال شدم",
+                callback_data="check_membership",
             )
         ],
         [
             InlineKeyboardButton(
                 "🛍 مشاهده محصولات در سایت",
-                url=WEBSITE_URL
+                url=WEBSITE_URL,
             )
         ],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # --------------------------------------------------------
-    # پیام بر اساس منبع ورود
-    # --------------------------------------------------------
 
     if source == "instagram":
 
@@ -95,7 +91,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "از برندهای منتخب را در مهزا کالکشن دنبال کنید.\n\n"
             "برای دیدن جدیدترین محصولات و اطلاع از "
             "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
-            "👇 برای ورود به کانال روی دکمه زیر بزنید:"
+            "1️⃣ ابتدا روی «📢 عضویت در کانال مهزا» بزنید.\n"
+            "2️⃣ سپس روی «✅ عضو کانال شدم» بزنید."
         )
 
     elif source == "website":
@@ -105,7 +102,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "از طریق سایت مهزا وارد ربات شده‌اید. 🛍️\n\n"
             "برای دنبال کردن جدیدترین محصولات و اطلاع از "
             "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
-            "👇 برای عضویت در کانال روی دکمه زیر بزنید:"
+            "1️⃣ ابتدا روی «📢 عضویت در کانال مهزا» بزنید.\n"
+            "2️⃣ سپس روی «✅ عضو کانال شدم» بزنید."
         )
 
     else:
@@ -116,17 +114,81 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "مهزا کالکشن را دنبال کنید.\n\n"
             "برای اطلاع از محصولات جدید و موجودی‌های تازه، "
             "به کانال تلگرام مهزا بپیوندید. 💕\n\n"
-            "👇 یکی از گزینه‌های زیر را انتخاب کنید:"
+            "1️⃣ ابتدا وارد کانال شوید.\n"
+            "2️⃣ سپس روی «✅ عضو کانال شدم» بزنید."
         )
-
-    # --------------------------------------------------------
-    # ارسال پیام
-    # --------------------------------------------------------
 
     await update.message.reply_text(
         message,
         reply_markup=reply_markup,
     )
+
+
+# ============================================================
+# Check Membership
+# ============================================================
+
+async def check_membership(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    user = query.from_user
+
+    try:
+
+        member = await context.bot.get_chat_member(
+            chat_id=CHANNEL_USERNAME,
+            user_id=user.id,
+        )
+
+        status = member.status
+
+        if status in ["member", "administrator", "creator"]:
+
+            await query.message.reply_text(
+                "🎉 عضویت شما در کانال Mahza Collection تأیید شد.\n\n"
+                "خوش آمدید 🌷\n"
+                "از همراهی شما با مهزا کالکشن خوشحالیم. 🛍️"
+            )
+
+            logger.info(
+                "MEMBERSHIP CONFIRMED | user_id=%s | username=%s",
+                user.id,
+                user.username,
+            )
+
+        else:
+
+            await query.message.reply_text(
+                "⚠️ هنوز عضویت شما در کانال تأیید نشده است.\n\n"
+                "ابتدا وارد کانال شوید و عضو شوید، "
+                "سپس دوباره روی «✅ عضو کانال شدم» بزنید."
+            )
+
+            logger.info(
+                "MEMBERSHIP NOT CONFIRMED | user_id=%s | status=%s",
+                user.id,
+                status,
+            )
+
+    except Exception as error:
+
+        logger.error(
+            "MEMBERSHIP CHECK ERROR | user_id=%s | error=%s",
+            user.id,
+            error,
+        )
+
+        await query.message.reply_text(
+            "⚠️ فعلاً نتوانستم عضویت شما را بررسی کنم.\n\n"
+            "لطفاً مطمئن شوید ابتدا عضو کانال شده‌اید "
+            "و دوباره تلاش کنید."
+        )
 
 
 # ============================================================
@@ -142,6 +204,13 @@ def main():
 
     application.add_handler(
         CommandHandler("start", start)
+    )
+
+    application.add_handler(
+        CallbackQueryHandler(
+            check_membership,
+            pattern="^check_membership$",
+        )
     )
 
     print("Mahza Collection Growth Bot is running...")
