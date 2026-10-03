@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,9 +57,7 @@ def load_stats():
     try:
 
         with open(STATS_FILE, "r", encoding="utf-8") as file:
-            stats = json.load(file)
-
-        return stats
+            return json.load(file)
 
     except Exception as error:
 
@@ -88,10 +87,63 @@ def save_stats(stats):
                 indent=2,
             )
 
+        # ----------------------------------------------------
+        # Save stats.json permanently in GitHub
+        # ----------------------------------------------------
+
+        subprocess.run(
+            ["git", "config", "user.name", "Mahza Collection Bot"],
+            check=True,
+        )
+
+        subprocess.run(
+            [
+                "git",
+                "config",
+                "user.email",
+                "mahza-collection-bot@users.noreply.github.com",
+            ],
+            check=True,
+        )
+
+        subprocess.run(
+            ["git", "add", "stats.json"],
+            check=True,
+        )
+
+        result = subprocess.run(
+            [
+                "git",
+                "commit",
+                "-m",
+                "Update stats [skip ci]",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode == 0:
+
+            subprocess.run(
+                ["git", "push"],
+                check=True,
+            )
+
+            logger.info(
+                "STATS SAVED TO GITHUB"
+            )
+
+        else:
+
+            logger.info(
+                "STATS COMMIT SKIPPED | %s",
+                result.stdout.strip(),
+            )
+
     except Exception as error:
 
         logger.error(
-            "STATS SAVE ERROR | error=%s",
+            "STATS GITHUB SAVE ERROR | error=%s",
             error,
         )
 
@@ -125,11 +177,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     source = "direct"
 
     if context.args:
-
         source = context.args[0].strip().lower()
 
     if source not in ["instagram", "website"]:
-
         source = "direct"
 
     increase_stat(source)
@@ -217,8 +267,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    user = update.effective_user
-
     stats_data = load_stats()
 
     message = (
@@ -227,8 +275,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🌐 Website: {stats_data.get('website', 0)}\n"
         f"🔗 Direct: {stats_data.get('direct', 0)}\n"
         f"✅ Members confirmed: "
-        f"{stats_data.get('members_confirmed', 0)}\n\n"
-        f"👤 درخواست توسط: {user.first_name}"
+        f"{stats_data.get('members_confirmed', 0)}"
     )
 
     await update.message.reply_text(message)
