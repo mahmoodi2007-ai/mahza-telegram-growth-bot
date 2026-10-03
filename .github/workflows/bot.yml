@@ -37,11 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     # --------------------------------------------------------
-    # دریافت کد منبع ورود
-    # مثال:
-    # /start instagram
-    # /start website
-    # /start campaign1
+    # دریافت منبع ورود
     # --------------------------------------------------------
 
     source = "direct"
@@ -69,14 +65,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
             InlineKeyboardButton(
-                "🛍 ورود به سایت مهزا",
-                url=WEBSITE_URL
+                "📢 عضویت در کانال مهزا",
+                url=CHANNEL_URL
             )
         ],
         [
             InlineKeyboardButton(
-                "📢 عضویت در کانال مهزا",
-                url=CHANNEL_URL
+                "🛍 مشاهده محصولات در سایت",
+                url=WEBSITE_URL
             )
         ],
     ]
@@ -84,16 +80,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # --------------------------------------------------------
-    # پیام خوش‌آمدگویی
+    # پیام بر اساس منبع ورود
     # --------------------------------------------------------
 
+    if source == "instagram":
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "🛍 مجموعه‌ای از محصولات زنانه، مردانه و کودک "
+            "از برندهای منتخب را در مهزا کالکشن دنبال کنید.\n\n"
+            "برای دیدن جدیدترین محصولات و اطلاع از "
+            "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 برای ورود به کانال روی دکمه زیر بزنید:"
+        )
+
+    elif source == "website":
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "از طریق سایت مهزا وارد ربات شده‌اید. 🛍️\n\n"
+            "برای دنبال کردن جدیدترین محصولات و اطلاع از "
+            "موجودی‌های جدید، به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 برای عضویت در کانال روی دکمه زیر بزنید:"
+        )
+
+    else:
+
+        message = (
+            "🌷 سلام و خوش آمدید به Mahza Collection\n\n"
+            "🛍 جدیدترین محصولات زنانه، مردانه و کودک "
+            "مهزا کالکشن را دنبال کنید.\n\n"
+            "برای اطلاع از محصولات جدید و موجودی‌های تازه، "
+            "به کانال تلگرام مهزا بپیوندید. 💕\n\n"
+            "👇 یکی از گزینه‌های زیر را انتخاب کنید:"
+        )
+
     await update.message.reply_text(
-        "سلام 🌷\n"
-        "به ربات Mahza Collection خوش آمدید. 🛍✨\n\n"
-        "اینجا می‌توانید جدیدترین محصولات، "
-        "تخفیف‌ها و پیشنهادهای مهزا کالکشن را دنبال کنید.\n\n"
-        "برای ورود به سایت یا عضویت در کانال، "
-        "یکی از گزینه‌های زیر را انتخاب کنید:",
+        message,
         reply_markup=reply_markup,
     )
 
