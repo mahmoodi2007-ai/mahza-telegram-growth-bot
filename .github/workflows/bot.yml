@@ -1,3 +1,4 @@
+
 name: Mahza Telegram Growth Bot
 
 "on":
@@ -31,6 +32,6 @@ jobs:
 
       - name: Run bot
         env:
-        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python bot.py
